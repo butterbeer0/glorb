@@ -25,13 +25,13 @@
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
   a.card{display:flex;flex-direction:column;background:var(--card);color:inherit;text-decoration:none;border:2px solid var(--ink);border-radius:20px;overflow:hidden;transition:transform .12s}
   a.card:hover{transform:translate(-3px,-3px);box-shadow:5px 5px 0 var(--accent)}
+  a.card[hidden]{display:none}
   .thumb{aspect-ratio:16/10;display:grid;place-items:center;background:var(--mint);font-size:3.5rem;border-bottom:2px solid var(--ink)}
   .thumb img{width:100%;height:100%;object-fit:cover}
   .body{padding:14px 16px 18px}
   .body h2{margin:0 0 4px;font-size:1.25rem}
   .body p{margin:0;color:var(--muted);font-size:.95rem}
   .msg{color:var(--muted);padding:24px 0}
-  code{background:var(--card);padding:2px 6px;border-radius:6px}
 </style>
 </head>
 <body>
@@ -39,41 +39,37 @@
   <h1>glorb<span></span></h1>
   <p class="sub">Pick a game and play.</p>
   <input id="q" type="search" placeholder="Search games" aria-label="Search games" autocomplete="off">
-  <div id="grid" class="grid"></div>
-  <p id="msg" class="msg" hidden></p>
+
+  <div id="grid" class="grid">
+
+    <!--
+      ADD A GAME: copy one <a class="card"> block below, paste it under the last one, and change:
+        href   -> a game in your repo (games/my-game/index.html) or any full link (https://...)
+        thumb  -> an emoji, or an image: <img src="games/my-game/thumb.png" alt="">
+        title and description
+    -->
+
+    <a class="card" href="games/crazycattle3d/index.html">
+      <div class="thumb">🐑</div>
+      <div class="body"><h2>Crazy Cattle 3D</h2><p>Kill sheep</p></div>
+    </a>
+
+  </div>
+  <p id="msg" class="msg" hidden>No games match that search.</p>
 </main>
 <script>
-(async () => {
-  const grid = document.getElementById('grid'), msg = document.getElementById('msg'), q = document.getElementById('q');
-  let games = [];
-  try {
-    const res = await fetch('games/games.json', {cache:'no-cache'});
-    if (!res.ok) throw new Error(res.status);
-    games = await res.json();
-  } catch (e) {
-    msg.hidden = false;
-    msg.innerHTML = 'Couldn’t load <code>games/games.json</code>. If you opened this file directly, run a local server (<code>python3 -m http.server</code>) or use GitHub Pages.';
-    return;
-  }
-  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  function render() {
+  const q = document.getElementById('q'), msg = document.getElementById('msg');
+  const cards = [...document.querySelectorAll('#grid a.card')];
+  q.addEventListener('input', () => {
     const t = q.value.trim().toLowerCase();
-    const list = games.filter(g => (g.title + ' ' + (g.description||'')).toLowerCase().includes(t));
-    grid.innerHTML = list.map(g => {
-      const base = 'games/' + encodeURIComponent(g.folder) + '/';
-      const thumb = g.thumbnail
-        ? `<img src="${base}${esc(g.thumbnail)}" alt="">`
-        : esc(g.emoji || '🎮');
-      return `<a class="card" href="${base}index.html">
-        <div class="thumb">${thumb}</div>
-        <div class="body"><h2>${esc(g.title)}</h2><p>${esc(g.description)}</p></div></a>`;
-    }).join('');
-    msg.hidden = list.length > 0;
-    if (!list.length) msg.textContent = games.length ? 'No games match that search.' : 'No games yet. Add one to games/games.json.';
-  }
-  q.addEventListener('input', render);
-  render();
-})();
+    let shown = 0;
+    cards.forEach(c => {
+      const match = c.textContent.toLowerCase().includes(t);
+      c.hidden = !match;
+      if (match) shown++;
+    });
+    msg.hidden = shown > 0;
+  });
 </script>
 </body>
 </html>
